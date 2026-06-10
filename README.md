@@ -46,4 +46,4 @@ start swindle because it (swindle) won't start without it
 
 ## License
 
-GPL-v2, probably
+GPL-v3, probably
