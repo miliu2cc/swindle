@@ -1,4 +1,3 @@
-
 /*
  * See LICENSE file and licenses/ directory for copyright and license details.
  */
@@ -1849,8 +1848,6 @@ keypress(struct wl_listener *listener, void *data)
 
 	wlr_idle_notifier_v1_notify_activity(idle_notifier, seat);
 
-	/* Intercept XF86Switch_VT_* keysyms here, before the !locked gate below. */
-
 	if (session && event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		for (i = 0; i < nsyms; i++) {
 			if (syms[i] >= XKB_KEY_XF86Switch_VT_1 &&
@@ -1860,12 +1857,17 @@ keypress(struct wl_listener *listener, void *data)
 				return;
 			}
 		}
+		for (i = 0; i < base_nsyms; i++) {
+			if (base_syms[i] >= XKB_KEY_XF86Switch_VT_1 &&
+					base_syms[i] <= XKB_KEY_XF86Switch_VT_12) {
+				wlr_session_change_vt(session,
+						base_syms[i] - XKB_KEY_XF86Switch_VT_1 + 1);
+				return;
+			}
+		}
 	}
 
-	/* On _press_ if there is no active screen locker,
-	 * attempt to process a compositor keybinding.
-	 * Try state-aware syms first, then attempt base syms 
-	 * (it should catch shifted digit binds) */
+	 /* Try state-aware syms first, then base syms (catches shifted digit binds). */
 	if (!locked && event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
 		for (i = 0; i < nsyms; i++)
 			handled = keybinding(mods, syms[i]) || handled;
