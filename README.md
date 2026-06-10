@@ -26,11 +26,8 @@ development packages) and run `make` followed by `doas/sudo make install`, if yo
 
 ## Things that are good to have
 
-* [smsg](https://github.com/kantiankant/smsg)
 * [foot](https://codeberg.org/dnkl/foot)
 
-> Note: I will probably be integrating smsg into the project so you don't have to hunt for it 
-separately
 
 ## Known Issues
 

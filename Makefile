@@ -11,7 +11,10 @@ LDLIBS    = `$(PKG_CONFIG) --libs $(PKGS)` $(WLR_LIBS) -lm $(LIBS)
 SCANNER   = `$(PKG_CONFIG) --variable=wayland_scanner wayland-scanner`
 PROTOCOLS = `$(PKG_CONFIG) --variable=pkgdatadir wayland-protocols`
 
-all: swindle
+SMSG_CFLAGS = `$(PKG_CONFIG) --cflags wayland-client` -Wall -Wextra -Wno-unused-parameter
+SMSG_LDLIBS = `$(PKG_CONFIG) --libs wayland-client`
+
+all: swindle smsg/smsg
 
 swindle: src/dwl.o src/util.o parser/parser.o dwl-ipc-unstable-v2-protocol.o src/wlr_ext_workspace_v1.o ext-workspace-v1-protocol.o
 	$(CC) $^ $(DWLCFLAGS) $(LDFLAGS) $(LDLIBS) -o $@
@@ -52,21 +55,41 @@ dwl-ipc-unstable-v2-protocol.h:
 	$(SCANNER) server-header protocols/dwl-ipc-unstable-v2.xml $@
 dwl-ipc-unstable-v2-protocol.c:
 	$(SCANNER) private-code protocols/dwl-ipc-unstable-v2.xml $@
+
+# smsg 
+smsg/dwl-ipc-unstable-v2-protocol.h:
+	$(SCANNER) client-header protocols/dwl-ipc-unstable-v2.xml $@
+
+smsg/dwl-ipc-unstable-v2-protocol.c:
+	$(SCANNER) private-code protocols/dwl-ipc-unstable-v2.xml $@
+
+smsg/dwl-ipc-unstable-v2-protocol.o: smsg/dwl-ipc-unstable-v2-protocol.c
+	$(CC) $(SMSG_CFLAGS) -o $@ -c $<
+
+smsg/smsg.o: smsg/smsg.c smsg/dwl-ipc-unstable-v2-protocol.h
+	$(CC) $(SMSG_CFLAGS) -o $@ -c $<
+
+smsg/smsg: smsg/smsg.o smsg/dwl-ipc-unstable-v2-protocol.o
+	$(CC) $^ $(SMSG_CFLAGS) $(SMSG_LDLIBS) -o $@
+
 ext-workspace-v1-protocol.h:
 	$(SCANNER) server-header protocols/ext-workspace-v1.xml $@
 ext-workspace-v1-protocol.c:
 	$(SCANNER) private-code protocols/ext-workspace-v1.xml $@
 
 clean:
-	rm -f swindle src/*.o parser/*.o *.o *-protocol.h *-protocol.c
+	rm -f swindle smsg/smsg src/*.o parser/*.o smsg/*.o smsg/*-protocol.h smsg/*-protocol.c *.o *-protocol.h *-protocol.c
 
-install: swindle
+install: swindle smsg/smsg
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
 	cp -f swindle $(DESTDIR)$(PREFIX)/bin
 	chmod 755 $(DESTDIR)$(PREFIX)/bin/swindle
+	cp -f smsg/smsg $(DESTDIR)$(PREFIX)/bin
+	chmod 755 $(DESTDIR)$(PREFIX)/bin/smsg
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/swindle
+	rm -f $(DESTDIR)$(PREFIX)/bin/smsg
 
 .SUFFIXES: .c .o
 .c.o:
