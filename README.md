@@ -34,7 +34,7 @@ separately
 
 ## Known Issues
 
-N/A (please submit an issue report if you find any)
+- TTY switching is broken as of now
 
 ## Configuration
 
