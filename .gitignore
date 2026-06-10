@@ -1,4 +1,5 @@
 swindle
+smsg
 src/*.o
 *.o
 *-protocol.h
