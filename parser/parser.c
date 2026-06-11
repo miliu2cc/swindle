@@ -593,7 +593,7 @@ config_autostart_run(const Config *cfg)
 		 * daemon black magic. To say the least, it's good for the soul */
 		struct timespec deadline, now;
 		clock_gettime(CLOCK_MONOTONIC, &deadline);
-		deadline.tv_sec += 1;
+		deadline.tv_sec += 0.5;
 
 		int status;
 		int done = 0;

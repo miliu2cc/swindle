@@ -49,7 +49,7 @@ monitors = {
     --   layout = "dwindle", x = -1, y = -1 },
 }
 
--- autostart: you sequence what you want to start first, then second, then so on and so forth
+-- autostart: it starts stuff in sequence 
 autostart = {
     "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_SESSION_TYPE XDG_CURRENT_DESKTOP",
     "systemctl --user import-environment WAYLAND_DISPLAY XDG_SESSION_TYPE XDG_CURRENT_DESKTOP",
