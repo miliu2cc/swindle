@@ -132,9 +132,7 @@ ext_workspace_printstatus(Monitor *m)
 		int active = !!(m->tagset[m->seltags] & (1 << (ws->tag - 1)) & TAGMASK);
 
 		wlr_ext_workspace_handle_v1_set_urgent(ws->handle, status == 2);
-		/* TODO: Make it show the empty tags so it looks more aesthetically pleasing on /r/UNIXporn rices */
-		wlr_ext_workspace_handle_v1_set_hidden(ws->handle,
-				!active && status == 0);
+		wlr_ext_workspace_handle_v1_set_hidden(ws->handle, 0);
 		wlr_ext_workspace_handle_v1_set_active(ws->handle, active);
 	}
 }
