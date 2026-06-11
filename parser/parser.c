@@ -9,7 +9,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 #include <unistd.h>
+#include <signal.h>
+#include <sys/wait.h>
 #include <sys/inotify.h>
 #include <linux/input-event-codes.h>
 #include <xkbcommon/xkbcommon.h>
@@ -434,6 +437,32 @@ parse_buttons(lua_State *L, Config *cfg)
 	lua_pop(L, 1);
 }
 
+static void
+parse_autostart(lua_State *L, Config *cfg)
+{
+	lua_getglobal(L, "autostart");
+	if (!lua_istable(L, -1)) {
+		lua_pop(L, 1);
+		return;
+	}
+
+	cfg->nautostart = 0;
+	int n = (int)lua_rawlen(L, -1);
+	for (int i = 1; i <= n && cfg->nautostart < CFG_MAX_AUTOSTART; i++) {
+		lua_rawgeti(L, -1, i);
+		if (!lua_isstring(L, -1)) {
+			lua_pop(L, 1);
+			continue;
+		}
+		strncpy(cfg->autostart[cfg->nautostart].cmd,
+		        lua_tostring(L, -1),
+		        CFG_MAX_AUTOSTART_CMD - 1);
+		cfg->nautostart++;
+		lua_pop(L, 1);
+	}
+	lua_pop(L, 1);
+}
+
 /* Public API */
 
 char *
@@ -497,6 +526,7 @@ config_load(const char *path, Config *cfg)
 	parse_monitors  (L, cfg);
 	parse_keybinds  (L, cfg);
 	parse_buttons   (L, cfg);
+	parse_autostart (L, cfg);
 
 	lua_close(L);
 	return 0;
@@ -520,6 +550,73 @@ void
 config_apply_keybinds(const Config *cfg)
 {
 	(void)cfg;
+}
+
+void
+config_autostart_run(const Config *cfg)
+{
+	if (cfg->nautostart == 0)
+		return;
+
+	pid_t pid = fork();
+	if (pid < 0) {
+		perror("swindle autostart: fork");
+		return;
+	}
+	if (pid != 0)
+		return; /* compositor continues (sequencer runs in child) */
+
+	/* The sequencer child resets any inherited signal handlers and becomes
+	 * a new session so the compositor's SIGCHLD handling doesn't
+	 * interfere with our waitpid calls. */
+	signal(SIGCHLD, SIG_DFL);
+	setsid();
+
+	for (int i = 0; i < cfg->nautostart; i++) {
+		const char *cmd = cfg->autostart[i].cmd;
+
+		pid_t cpid = fork();
+		if (cpid < 0) {
+			fprintf(stderr, "swindle autostart: fork for '%s': %s\n",
+			        cmd, strerror(errno));
+			continue;
+		}
+		if (cpid == 0) {
+			execl("/bin/sh", "sh", "-c", cmd, NULL);
+			fprintf(stderr, "swindle autostart: exec '%s': %s\n",
+			        cmd, strerror(errno));
+			_exit(1);
+		}
+
+		/* wait a second because one shotters will fly past, but
+		 * daemon processes (some, like swaybg) won't because of 
+		 * daemon black magic. To say the least, it's good for the soul */
+		struct timespec deadline, now;
+		clock_gettime(CLOCK_MONOTONIC, &deadline);
+		deadline.tv_sec += 1;
+
+		int status;
+		int done = 0;
+		while (!done) {
+			pid_t r = waitpid(cpid, &status, WNOHANG);
+			if (r == cpid) {
+				done = 1;
+				if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
+					fprintf(stderr, "swindle autostart: '%s' exited with status %d\n",
+					        cmd, WEXITSTATUS(status));
+			} else {
+				clock_gettime(CLOCK_MONOTONIC, &now);
+				if (now.tv_sec > deadline.tv_sec ||
+				    (now.tv_sec == deadline.tv_sec &&
+				     now.tv_nsec >= deadline.tv_nsec))
+					break; /* looks like a daemon, move on */
+				struct timespec sl = { .tv_sec = 0, .tv_nsec = 50 * 1000 * 1000 };
+				nanosleep(&sl, NULL);
+			}
+		}
+	}
+
+	_exit(0);
 }
 
 /* inotify watcher */

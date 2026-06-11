@@ -15,6 +15,9 @@ appearance = {
     fullscreen_bg = 0x000000ff,
 }
 
+
+-- Note: the entire input section requires you to restart
+-- the compositor once changed
 input = {
     repeat_rate             = 50,
     repeat_delay            = 150,
@@ -45,6 +48,14 @@ monitors = {
     -- { name = "eDP-1", mfact = 0.5, nmaster = 1, scale = 2.0,
     --   layout = "dwindle", x = -1, y = -1 },
 }
+
+-- autostart: you sequence what you want to start first, then second, then so on and so forth
+autostart = {
+    "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_SESSION_TYPE XDG_CURRENT_DESKTOP",
+    "systemctl --user import-environment WAYLAND_DISPLAY XDG_SESSION_TYPE XDG_CURRENT_DESKTOP",
+    "waybar",
+}
+
 
 keybinds = {
     { mods = {"logo"},          key = "q",     action = "spawn",  args = {"alacritty"} },

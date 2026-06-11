@@ -2487,14 +2487,19 @@ run(char *startup_cmd)
 		close(piperw[0]);
 	}
 
-	/* Mark stdout as non-blocking to avoid the startup script
+	/* Mark stdout as non-blocking as to avoid the startup script
 	 * causing swindle to freeze when a user neither closes stdin
-	 * nor consumes standard input in his startup script */
+	 * nor consumes standard input in their startup script */
 
 	if (fd_set_nonblock(STDOUT_FILENO) < 0)
 		close(STDOUT_FILENO);
 
 	printstatus();
+
+	/* Launch autostart commands now that the socket is live and the backend
+	 * is running. Commands run sequentially in a detached child process so
+	 * the compositor never blocks. */
+	config_autostart_run(&cfg);
 
 	/* At this point the outputs are initialized, choose initial selmon based on
 	 * cursor position, and set default cursor image */

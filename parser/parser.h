@@ -6,11 +6,13 @@
 #include <wayland-server-core.h>
 
 /* Maximum lengths. Good for the soul, they say */
-#define CFG_MAX_RULES    64
-#define CFG_MAX_MONITORS 16
-#define CFG_MAX_KEYBINDS 256
-#define CFG_MAX_ARGS     16
-#define CFG_MAX_STRLEN   256
+#define CFG_MAX_RULES      64
+#define CFG_MAX_MONITORS   16
+#define CFG_MAX_KEYBINDS   256
+#define CFG_MAX_ARGS       16
+#define CFG_MAX_STRLEN     256
+#define CFG_MAX_AUTOSTART  32
+#define CFG_MAX_AUTOSTART_CMD 512
 
 /* Appearance */
 
@@ -87,6 +89,12 @@ typedef struct {
 	int      nargs;
 } CfgButton;
 
+/* Autostart */
+
+typedef struct {
+	char cmd[CFG_MAX_AUTOSTART_CMD];
+} CfgAutostart;
+
 /* the whole shebang */
 
 typedef struct {
@@ -109,6 +117,9 @@ typedef struct {
 	bool          sloppyfocus;
 	bool          bypass_surface_visibility;
 	int           log_level; /* WLR_* log level */
+
+	CfgAutostart  autostart[CFG_MAX_AUTOSTART];
+	int           nautostart;
 } Config;
 
 /* Public API */
@@ -123,6 +134,8 @@ void config_apply_input(const Config *cfg);
 
 void config_apply_keybinds(const Config *cfg);
 
+void config_autostart_run(const Config *cfg);
+
 typedef void (*config_reload_cb)(const Config *cfg, void *userdata);
 
 struct wl_event_source *config_watch_start(
@@ -134,4 +147,4 @@ struct wl_event_source *config_watch_start(
 
 void config_watch_stop(struct wl_event_source *src);
 
-#endif 
+#endif
