@@ -1,5 +1,12 @@
 ## Swindle
 
+
+  ████████  ██  ██                                             
+  ██	██  ██  ██ 
+  ██	██  ██  ██
+████	██████████
+
+
 > "It's so bad it's not even funny!" -kantiankant, 2026
 
 
